@@ -1,0 +1,7 @@
+import torch
+from your_model_script import get_model
+
+# 创建模型并保存它的初始状态（全是随机数）
+model = get_model(num_classes=5)
+torch.save(model.state_dict(), "best_model.pth")
+print("测试用的权重文件 best_model.pth 已生成！")
