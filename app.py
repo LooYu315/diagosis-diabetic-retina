@@ -11,11 +11,17 @@ st.title("👁️ DR 智能分级诊断系统")
 st.write("上传眼底扫描图，AI 将自动分析病变程度。")
 
 # 2. 加载模型权重
-@st.cache_resource # 缓存模型，避免重复加载
+@st.cache_resource
 def load_ai_model():
-    model = get_model(num_classes=5)
-    # 建议将加载路径修改为当前目录
-    model.load_state_dict(torch.load("./best_model.pth", map_location=torch.device('cpu')))
+    # 确保这里的 num_classes 和你生成权重时一致
+    model = get_model(num_classes=5) 
+    
+    # 加载权重
+    state_dict = torch.load("./best_model.pth", map_location=torch.device('cpu'))
+    
+    # 这一步是关键：强制匹配
+    model.load_state_dict(state_dict, strict=False) 
+    
     model.eval()
     return model
 
