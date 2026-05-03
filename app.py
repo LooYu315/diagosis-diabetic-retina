@@ -14,7 +14,8 @@ st.write("上传眼底扫描图，AI 将自动分析病变程度。")
 @st.cache_resource # 缓存模型，避免重复加载
 def load_ai_model():
     model = get_model(num_classes=5)
-    model.load_state_dict(torch.load("best_model.pth", map_location=torch.device('cpu')))
+    # 建议将加载路径修改为当前目录
+    model.load_state_dict(torch.load("./best_model.pth", map_location=torch.device('cpu')))
     model.eval()
     return model
 
