@@ -1,0 +1,46 @@
+{
+  "model_architecture": {
+    "backbone": "DenseNet121",
+    "weights_initialization": "ImageNet1K_V1",
+    "custom_head": "nn.Sequential(Dropout(p=0.4), Linear(1024, 5))",
+    "num_classes": 5,
+    "ensemble_type": "5-Fold Softmax Probability Averaging"
+  },
+  "preprocessing_pipeline": {
+    "order_of_operations": [
+      "BGR_to_RGB_Conversion",
+      "Auto_Crop_Black_Boundaries",
+      "Resize_to_512x512",
+      "Ben_Graham_Processing (addWeighted with GaussianBlur, sigma=10)",
+      "CLAHE_Normalization (LAB_Color_Space, clipLimit=2.0, tileGridSize=8x8)"
+    ],
+    "input_resolution": [512, 512],
+    "normalization": {
+      "mean": [0.485, 0.456, 0.406],
+      "std": [0.229, 0.224, 0.225]
+    }
+  },
+  "training_hyperparameters": {
+    "batch_size": 16,
+    "epochs": 20,
+    "optimizer": "Adam",
+    "learning_rate": 5e-5,
+    "weight_decay": 1e-4,
+    "loss_function": "CrossEntropyLoss with Class Balancing",
+    "class_weighting_strategy": "Class-Balanced Loss (Beta=0.997)",
+    "lr_scheduler": "ReduceLROnPlateau (mode=max, factor=0.2, patience=2, monitor=val_kappa)",
+    "early_stopping": "Patience=3 (monitor=val_loss)"
+  },
+  "data_augmentation": {
+    "horizontal_flip": 0.5,
+    "vertical_flip": 0.5,
+    "random_rotation": 359
+  },
+  "evaluation_metrics": [
+    "Quadratic Weighted Kappa (Primary)",
+    "Weighted F1-Score",
+    "Accuracy",
+    "Precision",
+    "Recall"
+  ]
+}
