@@ -1,11 +1,11 @@
+streamlit
 torch
 torchvision
+opencv-python-headless
 pandas
 numpy
-opencv-python-headless
 Pillow
 scikit-learn
 matplotlib
 seaborn
 tqdm
-streamlit
