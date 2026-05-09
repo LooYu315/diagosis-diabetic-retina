@@ -81,20 +81,20 @@ if uploaded_file:
             else:
                 input_tensor = preprocess_image(image)
                 
-                # --- New Logic: Collect individual and ensemble results ---
+                # --- 1. Inference Logic ---
                 all_probs = []
                 with torch.no_grad():
-                    for i, m in enumerate(models_list):
+                    for m in models_list:
                         output = m(input_tensor)
                         prob = torch.softmax(output, dim=1)
                         all_probs.append(prob)
                 
-                # 1. Ensemble Calculation
+                # Calculate average probabilities
                 avg_probs = torch.mean(torch.stack(all_probs), dim=0)
                 final_prediction = torch.argmax(avg_probs, dim=1).item()
                 final_confidence = torch.max(avg_probs).item()
                 
-                # --- UI Display ---
+                # --- 2. Final Result UI ---
                 classes = ['0 - No DR', '1 - Mild', '2 - Moderate', '3 - Severe', '4 - Proliferative DR']
                 
                 st.divider()
@@ -104,41 +104,27 @@ if uploaded_file:
                 else:
                     st.warning(f"**{classes[final_prediction]}** (Confidence: {final_confidence*100:.2f}%)")
 
-                # --- 📊 Display Individual Model Confidence ---
+                # --- 3. Probability Distribution Chart ---
+                st.divider()
+                st.subheader("📈 Probability Distribution (All Classes)")
+                
+                conf_data = {
+                    "Stage": classes,
+                    "Confidence (%)": [float(p) * 100 for p in avg_probs[0]]
+                }
+                # Display horizontal bar chart
+                st.bar_chart(data=conf_data, x="Stage", y="Confidence (%)", horizontal=True)
+
+                # --- 4. Individual Model Metrics ---
                 st.divider()
                 st.subheader("📊 Individual Model Analysis")
-                cols = st.columns(5) # Create 5 columns for 5 models
+                cols = st.columns(5)
                 
                 for i, prob in enumerate(all_probs):
                     conf = torch.max(prob).item()
                     pred = torch.argmax(prob).item()
                     with cols[i]:
-                        # 这里的 delta 可以显示该模型与平均值的差距（可选）
                         st.metric(label=f"Model {i}", value=f"{conf*100:.1f}%")
-                        st.caption(f"Predict: Class {pred}")
+                        st.caption(f"Class: {pred}")
                 
-                st.info("The final result is the weighted average of these 5 specialized models.")
-                
-                # 3. Inference
-                all_probs = []
-                with torch.no_grad():
-                    for m in models_list:
-                        output = m(input_tensor)
-                        all_probs.append(torch.softmax(output, dim=1))
-                    
-                    # Average probabilities across all 5 folds
-                    avg_probs = torch.mean(torch.stack(all_probs), dim=0)
-                    prediction = torch.argmax(avg_probs, dim=1).item()
-                    confidence = torch.max(avg_probs).item()
-                
-                # 4. Display Results
-                classes = ['0 - No DR', '1 - Mild', '2 - Moderate', '3 - Severe', '4 - Proliferative DR']
-                
-                st.subheader("Diagnosis Result:")
-                if prediction == 0:
-                    st.success(f"Result: {classes[prediction]}")
-                else:
-                    st.warning(f"Result: {classes[prediction]}")
-                
-                st.write(f"**Confidence Score:** {confidence*100:.2f}%")
-                st.info("Note: This is an AI-generated report for reference only. Please consult a doctor.")
+                st.info("The final result is the ensemble average of these 5 specialized models.")
