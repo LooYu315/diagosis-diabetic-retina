@@ -75,13 +75,49 @@ if uploaded_file:
     
     if st.button("Run AI Diagnosis"):
         with st.spinner("Processing with 5 Ensemble Models..."):
-            # 1. Load Models
             models_list = load_ensemble()
             if len(models_list) < 5:
-                st.error(f"Error: Found only {len(models_list)}/5 models. Please check your .pth files.")
+                st.error(f"Error: Found only {len(models_list)}/5 models.")
             else:
-                # 2. Preprocess
                 input_tensor = preprocess_image(image)
+                
+                # --- New Logic: Collect individual and ensemble results ---
+                all_probs = []
+                with torch.no_grad():
+                    for i, m in enumerate(models_list):
+                        output = m(input_tensor)
+                        prob = torch.softmax(output, dim=1)
+                        all_probs.append(prob)
+                
+                # 1. Ensemble Calculation
+                avg_probs = torch.mean(torch.stack(all_probs), dim=0)
+                final_prediction = torch.argmax(avg_probs, dim=1).item()
+                final_confidence = torch.max(avg_probs).item()
+                
+                # --- UI Display ---
+                classes = ['0 - No DR', '1 - Mild', '2 - Moderate', '3 - Severe', '4 - Proliferative DR']
+                
+                st.divider()
+                st.subheader("🏁 Final Diagnosis Result")
+                if final_prediction == 0:
+                    st.success(f"**{classes[final_prediction]}** (Confidence: {final_confidence*100:.2f}%)")
+                else:
+                    st.warning(f"**{classes[final_prediction]}** (Confidence: {final_confidence*100:.2f}%)")
+
+                # --- 📊 Display Individual Model Confidence ---
+                st.divider()
+                st.subheader("📊 Individual Model Analysis")
+                cols = st.columns(5) # Create 5 columns for 5 models
+                
+                for i, prob in enumerate(all_probs):
+                    conf = torch.max(prob).item()
+                    pred = torch.argmax(prob).item()
+                    with cols[i]:
+                        # 这里的 delta 可以显示该模型与平均值的差距（可选）
+                        st.metric(label=f"Model {i}", value=f"{conf*100:.1f}%")
+                        st.caption(f"Predict: Class {pred}")
+                
+                st.info("The final result is the weighted average of these 5 specialized models.")
                 
                 # 3. Inference
                 all_probs = []
